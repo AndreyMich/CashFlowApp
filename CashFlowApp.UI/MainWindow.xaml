@@ -1,0 +1,16 @@
+﻿<Window x:Class="CashFlowApp.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashFlowApp.UI"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Button Content="Choose Expenses File" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Click="ChooseExpensesFile"/>
+        <TextBox Name="ExpensesFilePath" IsReadOnly="True" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,40,0,0" Width="300"/>
+        <Button Content="Choose Incomes File" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,70,0,0" Click="ChooseIncomesFile"/>
+        <TextBox Name="IncomesFilePath" IsReadOnly="True" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,100,0,0" Width="300"/>
+        <Button Content="Generate Excel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,130,0,0" Click="GenerateExcel"/>
+    </Grid>
+</Window>
