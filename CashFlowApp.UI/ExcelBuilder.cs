@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -92,27 +93,51 @@ namespace CashFlowApp.UI
             }
         }
 
-        public List<Transaction> ParseFile(string path)
+        public List<Transaction> ParseExpenses(string path)
         {
+            string redundantLineName = @"סה""כ";
+
             List<Transaction> transactions = new List<Transaction>();
-
-            using (SLDocument sl = new SLDocument(path))
+            try
             {
-                int iRow = 2;  // assuming first row has headers
-
-                while (!string.IsNullOrEmpty(sl.GetCellValueAsString(iRow, 1)))
+                using (SLDocument sl = new SLDocument(path))
                 {
-                    transactions.Add(new Transaction
-                    {
-                        Amount = decimal.Parse(sl.GetCellValueAsString(iRow, 1)),   // assuming column 1 has Amount
-                        Date =sl.GetCellValueAsDateTime(iRow, 2),   // assuming column 2 has Date
-                        Name = sl.GetCellValueAsString(iRow, 3)                    // assuming column 3 has Name
-                    });
+                    int iRow = 2;  // assuming first row has headers
 
-                    iRow++;
+                    DateTime effectiveDate = DateTime.MinValue;
+                    while (!string.IsNullOrEmpty(sl.GetCellValueAsString(iRow, 3)))
+                    {
+
+                        string dateCellVal = sl.GetCellValueAsString(iRow, 2);
+
+                        if (string.IsNullOrEmpty(dateCellVal) || 
+                            !string.IsNullOrEmpty(dateCellVal) && DateTime.TryParse(dateCellVal, out effectiveDate))
+                        {
+                            string nameCellVal = sl.GetCellValueAsString(iRow, 3);
+                            string amountCellVal = sl.GetCellValueAsString(iRow, 7);
+                            if (nameCellVal != redundantLineName)
+                            {
+                                transactions.Add(new Transaction()
+                                {
+                                    Name = nameCellVal,
+                                    Amount = decimal.Parse(amountCellVal),
+                                    Date = effectiveDate
+                                });
+                            }
+                        }
+                        
+                      
+
+                        iRow++;
+                    }
                 }
             }
+            catch(Exception e)
+            {
 
+            }
+         
+            
             return transactions;
         }
     }
