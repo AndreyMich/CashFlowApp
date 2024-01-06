@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CashFlowApp.UI.model;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -50,10 +51,13 @@ namespace CashFlowApp.UI
         private void GenerateExcel(object sender, RoutedEventArgs e)
         {
             ExcelBuilder excelBuilder = new ExcelBuilder();
-            List<Transaction> expenses = excelBuilder.ParseFile(ExpensesFilePath.Text);
-            List<Transaction> incomes = excelBuilder.ParseFile(IncomesFilePath.Text);
+            ExcelBuilderModel model = new ExcelBuilderModel();
+            TransactionProcessor processor = new TransactionProcessor();
 
-            excelBuilder.CreateExcel(expenses, incomes);
+            List<Transaction> expenses = excelBuilder.ParseExpenses(ExpensesFilePath.Text);
+            //List<Transaction> incomes = excelBuilder.ParseFile(IncomesFilePath.Text);
+            model.Expenses = expenses;
+            excelBuilder.CreateExcel(model);
         }
 
        

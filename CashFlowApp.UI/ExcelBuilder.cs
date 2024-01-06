@@ -1,9 +1,11 @@
-﻿using SpreadsheetLight;
+﻿using CashFlowApp.UI.model;
+using SpreadsheetLight;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,16 +14,17 @@ namespace CashFlowApp.UI
 {
     internal class ExcelBuilder
     {
-        public void CreateExcel(List<Transaction> expenses, List<Transaction> incomes)
+        private int row = 2;
+        public void CreateExcel(ExcelBuilderModel model)
         {
             using (var sl = new SLDocument())
             {
                 // Group expenses
                 // Group expenses and add to the workbook
-                GroupAndAddToExcelWithSL(sl, expenses, "Expenses");
+                AddExpensesToExcelWithSL(sl, model.Expenses, "Expenses");
 
                 // Group incomes and add to the workbook
-                GroupAndAddToExcelWithSL(sl, incomes, "Incomes");
+                //AddExpensesToExcelWithSL(sl, model.Incomes, "Incomes");
 
                 // Save the workbook to a file
                 var saveFileDialog = new Microsoft.Win32.SaveFileDialog
@@ -37,53 +40,71 @@ namespace CashFlowApp.UI
             }
         }
 
-        private void GroupAndAddToExcelWithSL(SLDocument sl, List<Transaction> transactions, string sheetPrefix)
+        private void AddExpensesToExcelWithSL(SLDocument sl, List<Transaction> transactions, string sheetPrefix)
         {
-            var now = DateTime.Now;
-            var currentMonthTransactions = transactions.Where(t => t.Date <= now).ToList();
-            if (currentMonthTransactions.Any())
+            var groupedTransactions = transactions.GroupBy(a => new Tuple<int,int>(a.Date.Month,a.Date.Year));
+
+            foreach (var transaction in groupedTransactions)//iterate transactions by month and year
             {
-                var groupedCurrentMonth = currentMonthTransactions.GroupBy(t => t.Name).Select(g => new GroupedTransaction()
+                string sheetName = $"{transaction.Key.Item1} {transaction.Key.Item2}";
+                var transactionByAccountNameGroup = transaction.ToList().GroupBy(a => a.Name); //groups of transaction by account name
+                foreach(var accountGroup in transactionByAccountNameGroup)
                 {
-                    Name = g.Key,
-                    TotalAmount = g.Sum(t => t.Amount),
-                    Date = now.ToString("MMMM yyyy")
-                }).ToList();
+                    List<GroupedTransaction> accountTransactions = accountGroup.Select(a => new GroupedTransaction()
+                    {
+                        TotalAmount = a.Amount,
+                        Date = a.Date.ToShortDateString(),
+                        Name = a.Name
+                    }).ToList();
 
-                AddToSheetWithSL(sl, $"{sheetPrefix} - {now:MMMM yyyy}", groupedCurrentMonth);
+                    AddToSheetWithSL(sl, sheetName, accountTransactions);
+                }
             }
+            //var now = DateTime.Now;
+            //var currentMonthTransactions = transactions.Where(t => t.Date <= now).ToList();
+            //if (currentMonthTransactions.Any())
+            //{
+            //    var groupedCurrentMonth = currentMonthTransactions.GroupBy(t => t.Name).Select(g => new GroupedTransaction()
+            //    {
+            //        Name = g.Key,
+            //        TotalAmount = g.Sum(t => t.Amount),
+            //        Date = now.ToString("MMMM yyyy")
+            //    }).ToList();
 
-            var futureTransactions = transactions.Where(t => t.Date > now).ToList();
-            var groupedFutureTransactions = futureTransactions.GroupBy(t => new { t.Date.Year, t.Date.Month, t.Name }).Select(g => new GroupedTransaction
-            {
-                Name = g.Key.Name,
-                TotalAmount = g.Sum(t => t.Amount),
-                Date = $"{new DateTime(g.Key.Year, g.Key.Month, 1):MMMM yyyy}"
-            }).ToList();
+            //    AddToSheetWithSL(sl, $"{sheetPrefix} - {now:MMMM yyyy}", groupedCurrentMonth);
+            //}
 
-            foreach (var group in groupedFutureTransactions.GroupBy(g => g.Date))
-            {
-                AddToSheetWithSL(sl, $"{sheetPrefix} - {group.Key}", group.ToList());
-            }
+            //var futureTransactions = transactions.Where(t => t.Date > now).ToList();
+            //var groupedFutureTransactions = futureTransactions.GroupBy(t => new { t.Date.Year, t.Date.Month, t.Name }).Select(g => new GroupedTransaction
+            //{
+            //    Name = g.Key.Name,
+            //    TotalAmount = g.Sum(t => t.Amount),
+            //    Date = $"{new DateTime(g.Key.Year, g.Key.Month, 1):MMMM yyyy}"
+            //}).ToList();
+
+            //foreach (var group in groupedFutureTransactions.GroupBy(g => g.Date))
+            //{
+            //    AddToSheetWithSL(sl, $"{sheetPrefix} - {group.Key}", group.ToList());
+            //}
+
+
         }
 
         private void AddToSheetWithSL(SLDocument sl, string sheetName, List<GroupedTransaction> groupedData)
         {
-            if (!sl.AddWorksheet(sheetName))
+            if (!IsSheetExist(sl,sheetName))
             {
-                // Handle case where sheet name might already exist
-                // This is just a simple example, you might want to add a suffix or handle in another way
-                sheetName += "_1";
                 sl.AddWorksheet(sheetName);
+                sl.SetCellValue(1, 2, "Name");
+                sl.SetCellValue(1, 3, "Total Amount");
+                sl.SetCellValue(1, 1, "Date");
             }
-
+            
             sl.SelectWorksheet(sheetName);
 
-            sl.SetCellValue(1, 1, "Name");
-            sl.SetCellValue(1, 2, "Total Amount");
-            sl.SetCellValue(1, 3, "Date");
+           
 
-            int row = 2;
+            
             foreach (var data in groupedData)
             {
                 sl.SetCellValue(row, 1, data.Name);
@@ -91,6 +112,12 @@ namespace CashFlowApp.UI
                 sl.SetCellValue(row, 3, data.Date);
                 row++;
             }
+        }
+
+        private bool IsSheetExist(SLDocument sl, string sheetName)
+        {
+            List<string> currentSheetNames = sl.GetSheetNames();
+            return currentSheetNames.Contains(sheetName);
         }
 
         public List<Transaction> ParseExpenses(string path)
