@@ -50,14 +50,13 @@ namespace CashFlowApp.UI
 
         private void GenerateExcel(object sender, RoutedEventArgs e)
         {
-            ExcelBuilder excelBuilder = new ExcelBuilder();
-            ExcelBuilderModel model = new ExcelBuilderModel();
-            TransactionProcessor processor = new TransactionProcessor();
+            CashFlowFacade cashFlowFacade = new CashFlowFacade();
+            cashFlowFacade.GenerateOutput(new CashFlowFilesModel()
+            {
+                ExpensesFilePath = ExpensesFilePath.Text
+            });
 
-            List<Transaction> expenses = excelBuilder.ParseExpenses(ExpensesFilePath.Text);
-            //List<Transaction> incomes = excelBuilder.ParseFile(IncomesFilePath.Text);
-            model.Expenses = expenses;
-            excelBuilder.CreateExcel(model);
+          
         }
 
        
